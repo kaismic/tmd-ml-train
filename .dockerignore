@@ -1,0 +1,6 @@
+TransportationData/
+results/
+__pycache__/
+*.pyc
+.git/
+*.onnx

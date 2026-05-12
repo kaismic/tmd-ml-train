@@ -1,0 +1,43 @@
+services:
+ 
+  # Default service: runs only TMDetection.py
+  # Usage: docker compose up --build
+  create-models:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: us-transportation-mode-detect
+    volumes:
+      - ./TransportationData:/app/TransportationData
+      - ./logs:/app/logs
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      bash -c "
+        echo '=== Running detection models ===' &&
+        python TMDetection.py
+      "
+ 
+  # Setup service: downloads data and processes it into a balanced dataset
+  # Usage: docker compose --profile setup up --build
+  setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: us-transportation-mode-setup
+    profiles:
+      - setup
+    volumes:
+      - ./TransportationData:/app/TransportationData
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      bash -c "
+        echo '=== Step 1: Downloading dataset ===' &&
+        python download_dataset.py &&
+        echo '=== Step 2: Processing raw data ===' &&
+        python TMDataset.py
+      "
+ 
