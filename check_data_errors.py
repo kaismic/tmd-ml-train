@@ -1,11 +1,9 @@
 import os
 import csv
 import re
-import sys
 from collections import defaultdict
 
-csv.field_size_limit(2147483640)
-
+csv.field_size_limit(2**31 - 1)
 
 
 print_limit = 10
@@ -123,5 +121,5 @@ def find_invalid_rows(folder_path):
             print(f"{key}: {value}")
 
 # Example usage
-folder_path = r"d:/TCCT/vlomonaco/TransportationData/_RawDataOriginal/"
+folder_path = r"./TransportationData/_RawDataOriginal/"
 find_invalid_rows(folder_path)
