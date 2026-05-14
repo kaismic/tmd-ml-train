@@ -2,11 +2,13 @@ services:
  
   # Default service: runs only TMDetection.py
   # Usage: docker compose up --build
-  create-models:
+  train-models:
+    profiles:
+      - train-models
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: us-transportation-mode-detect
+    container_name: tmd-train-models
     volumes:
       - ./TransportationData:/app/TransportationData
       - ./logs:/app/logs
@@ -15,19 +17,19 @@ services:
       - PYTHONUNBUFFERED=1
     command: >
       bash -c "
-        echo '=== Running detection models ===' &&
+        echo '=== Training models ===' &&
         python TMDetection.py
       "
  
-  # Setup service: downloads data and processes it into a balanced dataset
-  # Usage: docker compose --profile setup up --build
-  setup:
+  # Download service: downloads the raw dataset files only
+  # Usage: docker compose --profile download up --build
+  download:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: us-transportation-mode-setup
+    container_name: tmd-download
     profiles:
-      - setup
+      - download
     volumes:
       - ./TransportationData:/app/TransportationData
       - ./logs:/app/logs
@@ -35,9 +37,27 @@ services:
       - PYTHONUNBUFFERED=1
     command: >
       bash -c "
-        echo '=== Step 1: Downloading dataset ===' &&
-        python download_dataset.py &&
-        echo '=== Step 2: Processing raw data ===' &&
+        echo '=== Downloading dataset ===' &&
+        python download_dataset.py
+      "
+ 
+  # Preprocess service: processes raw data into a balanced dataset
+  # Usage: docker compose --profile preprocess up --build
+  preprocess:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tmd-preprocess
+    profiles:
+      - preprocess  
+    volumes:
+      - ./TransportationData:/app/TransportationData
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      bash -c "
+        echo '=== Processing raw data ===' &&
         python TMDataset.py
       "
  

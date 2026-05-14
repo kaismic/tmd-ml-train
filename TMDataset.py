@@ -51,7 +51,7 @@ class TMDataset:
         return self.header_with_features
 
     # Fix original raw files problems:
-    # (1)delete measure from  **sensor_to_exclude**
+    # (1) Delete measure that are not included in PROTOTYPE_SENSORS.
     # (2)if **sound** or **speed** measure rows have negative time --> use module
     # (3)if **time** have incorrect values ("/", ">", "<", "-", "_"...) --> delete file
     # (4)if file is empty --> delete file
@@ -89,11 +89,11 @@ class TMDataset:
                         for line in current_file:
                             line_data = line.split(",")
 
+                            if line_data[1] == "activityrecognition":
+                                line_data[0] = "0"
                             first_line = True
                             if first_line:
                                 first_line = False
-                                if line_data[1] == "activityrecognition":
-                                    line_data[0] = "0"
 
                             endLine = ",".join(line_data[2:])
                             # check if time data is correct, if is negative, make modulo
@@ -104,10 +104,8 @@ class TMDataset:
                                 if re.match(patternNumber, line_data[0]) is None:
                                     to_delete = 1
                                 current_time = line_data[0]
-                            # check sensor, if is in sensors_to_exclude don't consider
-                            if line_data[1] not in const.SENSORS_TO_EXCLUDE_FROM_FILES:
-                                current_sensor = line_data[1]
-                                line_result = current_time + "," + current_sensor + "," + endLine
+                            if line_data[1] in const.PROTOTYPE_SENSORS:
+                                line_result = current_time + "," + line_data[1] + "," + endLine
                                 file_result.write(line_result)
 
                 # remove files with incorrect values for time
@@ -186,38 +184,37 @@ class TMDataset:
                             line_data = line.split(",")
                             endLine = ",".join(line_data[2:])
                             current_time = line_data[0]
-                            sensor = line_data[1]
                             user = "," + line_data[(len(line_data) - 2)] if self.sintetic else ""
                             target = "," + line_data[(len(line_data) - 1)] if self.sintetic else ""
                             target = target.replace("\n","")
-                            # check sensors
-                            if line_data[1] not in const.SENSORS_TO_EXCLUDE_FROM_DATASET:  # the sensor is not to exlude
-                                if line_data[1] not in const.SENSOR_TO_TRANSFORM_MAGNITUDE:  # not to transofrom
-                                    if line_data[1] not in const.SENSOR_TO_TRANSFROM_4ROTATION:  # not to trasform (4 rotation)
-                                        if line_data[1] not in const.SENSOR_TO_TAKE_FIRST:  # not to take only first data
-                                            # report the line as it is
-                                            current_sensor = line_data[1]
-                                            line_result = current_time + "," + current_sensor + "," + endLine
-                                        else:
-                                            current_sensor = line_data[1]
-                                            vector_data = line_data[2:] if not self.sintetic else line_data[2:(len(line_data) - 2)]
-                                            vector_data = [float(i) for i in vector_data]
-                                            line_result = current_time + "," + current_sensor + "," + str(vector_data[0]) + user + target + "\n"
-                                    else:  # the sensor is to transform 4 rotation
+                            if line_data[1] in const.SENSORS_TO_EXCLUDE_FROM_DATASET:
+                                continue
+                            if line_data[1] not in const.SENSOR_TO_TRANSFORM_MAGNITUDE:  # not to transofrom
+                                if line_data[1] not in const.SENSOR_TO_TRANSFROM_4ROTATION:  # not to trasform (4 rotation)
+                                    if line_data[1] not in const.SENSOR_TO_TAKE_FIRST:  # not to take only first data
+                                        # report the line as it is
+                                        current_sensor = line_data[1]
+                                        line_result = current_time + "," + current_sensor + "," + endLine
+                                    else:
                                         current_sensor = line_data[1]
                                         vector_data = line_data[2:] if not self.sintetic else line_data[2:(len(line_data) - 2)]
                                         vector_data = [float(i) for i in vector_data]
-                                        magnitude = math.sin(math.acos(vector_data[3]))
-                                        line_result = current_time + "," + current_sensor + "," + str(magnitude) + user + target + "\n"
-                                else:  # the sensor is to transform
+                                        line_result = current_time + "," + current_sensor + "," + str(vector_data[0]) + user + target + "\n"
+                                else:  # the sensor is to transform 4 rotation
                                     current_sensor = line_data[1]
-                                    vector_data = line_data[2:] if not self.sintetic else line_data[2:(len(line_data)-2)]
+                                    vector_data = line_data[2:] if not self.sintetic else line_data[2:(len(line_data) - 2)]
                                     vector_data = [float(i) for i in vector_data]
-                                    magnitude = math.sqrt(sum(((math.pow(vector_data[0], 2)),
-                                                               (math.pow(vector_data[1], 2)),
-                                                               (math.pow(vector_data[2], 2)))))
+                                    magnitude = math.sin(math.acos(vector_data[3]))
                                     line_result = current_time + "," + current_sensor + "," + str(magnitude) + user + target + "\n"
-                                file_result.write(line_result)
+                            else:  # the sensor is to transform
+                                current_sensor = line_data[1]
+                                vector_data = line_data[2:] if not self.sintetic else line_data[2:(len(line_data)-2)]
+                                vector_data = [float(i) for i in vector_data]
+                                magnitude = math.sqrt(sum(((math.pow(vector_data[0], 2)),
+                                                            (math.pow(vector_data[1], 2)),
+                                                            (math.pow(vector_data[2], 2)))))
+                                line_result = current_time + "," + current_sensor + "," + str(magnitude) + user + target + "\n"
+                            file_result.write(line_result)
             elif file.endswith(".json"):
                 shutil.copyfile(os.path.join(dir_src,file),os.path.join(dir_dst,file))
         logging.info("END TRANSFORMING RAW DATA...")
@@ -795,35 +792,6 @@ class TMDataset:
         else:
             return pd.read_csv(const.DIR_DATASET + "/" + const.FILE_DATASET_BALANCED)
 
-    # return list of excluded sensor based on the correspondent classification level
-    def get_excluded_sensors(self, sensors_set):
-        excluded_sensors = []
-        if sensors_set == 1:
-            excluded_sensors = const.sensor_to_exclude_first
-        if sensors_set == 2:
-            excluded_sensors = const.sensor_to_exclude_second
-        if sensors_set == 3:
-            excluded_sensors = const.sensors_to_exclude_third
-        return excluded_sensors
-
-    # return list of considered sensors based on the correspondent classification level
-    def get_remained_sensors(self, sensors_set):
-        excluded_sensors = self.get_excluded_sensors(sensors_set)
-        remained_sensors = []
-        for s in self.get_sensors:
-            if s not in excluded_sensors:
-                remained_sensors.append(s)
-        return remained_sensors
-
-    def get_sensors_set_features(self, sensors_set):
-        feature_to_delete = []
-        header = self.get_header
-        for s in self.get_excluded_sensors(sensors_set):
-            for x in header.values():
-                if s in x:
-                    feature_to_delete.append(x)
-        features_list = (set(header.values()) - set(feature_to_delete))
-        return features_list
 
     def get_sensor_features(self, sensor):
         feature_sensor = []

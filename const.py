@@ -77,12 +77,11 @@ FILE_SINGLE_SENSOR_ANALYSIS = "_single_sensors_accuracy.csv"
 
 ################################## Sensors #############################################
 ################## list of sensors to exclude for classification #######################
-SENSORS_TO_EXCLUDE_FROM_FILES = ['', 'com.samsung.sensor.grip']
 
 SENSORS_TO_EXCLUDE_FROM_DATASET = ['com.google.sensor.internal_temperature', 'com.qti.sensor.amd',
                                    'com.qti.sensor.rmd', 'android.sensor.tilt_detector',
                                    'android.sensor.geomagnetic_rotation_vector', 'android.sensor.step_detector',
-                                   'android.sensor.gesture']
+                                   'android.sensor.gesture','android.sensor.step_counter','android.sensor.pressure','android.sensor.magnetic_field_uncalibrated','android.sensor.proximity','android.sensor.gravity','android.sensor.light','android.sensor.gesture','android.sensor.orientation','android.sensor.gyroscope_uncalibrated','activityrecognition','speed',]
 
 # compute magnitude
 SENSOR_TO_TRANSFORM_MAGNITUDE = ['android.sensor.accelerometer', 'android.sensor.orientation',
@@ -115,63 +114,86 @@ CV_PERC = 0.0
 #######################################################################################
 
 ###################### sensor classification levels ###################################
-sensor_to_exclude_first = ['com.google.sensor.internal_temperature',
-                           'com.qti.sensor.amd',
-                           'com.qti.sensor.rmd',
-                           'android.sensor.step_detector',
-                           'android.sensor.tilt_detector',
-                           'android.sensor.geomagnetic_rotation_vector',
-                           'android.sensor.step_counter',
-                           'android.sensor.pressure',
-                           'android.sensor.magnetic_field_uncalibrated',
-                           'android.sensor.proximity',
-                           'android.sensor.magnetic_field',
-                           'android.sensor.gravity',
-                           'android.sensor.light',
-                           'android.sensor.gesture',
-                           'android.sensor.linear_acceleration',
-                           'android.sensor.orientation',
-                           'android.sensor.rotation_vector',
-                           'android.sensor.game_rotation_vector',
-                           'android.sensor.gyroscope_uncalibrated',
-                           'activityrecognition',
-                           'speed',
-                           'time']
+# sensor_to_exclude_first = ['com.google.sensor.internal_temperature',
+#                            'com.qti.sensor.amd',
+#                            'com.qti.sensor.rmd',
+#                            'android.sensor.step_detector',
+#                            'android.sensor.tilt_detector',
+#                            'android.sensor.geomagnetic_rotation_vector',
+#                            'android.sensor.step_counter',
+#                            'android.sensor.pressure',
+#                            'android.sensor.magnetic_field_uncalibrated',
+#                            'android.sensor.proximity',
+#                            'android.sensor.magnetic_field',
+#                            'android.sensor.gravity',
+#                            'android.sensor.light',
+#                            'android.sensor.gesture',
+#                            'android.sensor.linear_acceleration',
+#                            'android.sensor.orientation',
+#                            'android.sensor.rotation_vector',
+#                            'android.sensor.game_rotation_vector',
+#                            'android.sensor.gyroscope_uncalibrated',
+#                            'activityrecognition',
+#                            'speed',
+#                            'time']
 
-sensor_to_exclude_second = ['com.google.sensor.internal_temperature',
-                            'com.qti.sensor.amd',
-                            'com.qti.sensor.rmd',
-                            'android.sensor.step_detector',
-                            'android.sensor.tilt_detector',
-                            'android.sensor.geomagnetic_rotation_vector',
-                            'android.sensor.step_counter',
-                            'android.sensor.pressure',
-                            'android.sensor.magnetic_field_uncalibrated',
-                            'android.sensor.proximity',
-                            'android.sensor.magnetic_field',
-                            'android.sensor.gravity',
-                            'android.sensor.light',
-                            'android.sensor.gesture',
-                            'speed',
-                            'activityrecognition',
-                            'time']
+# sensor_to_exclude_second = ['com.google.sensor.internal_temperature',
+#                             'com.qti.sensor.amd',
+#                             'com.qti.sensor.rmd',
+#                             'android.sensor.step_detector',
+#                             'android.sensor.tilt_detector',
+#                             'android.sensor.geomagnetic_rotation_vector',
+#                             'android.sensor.step_counter',
+#                             'android.sensor.pressure',
+#                             'android.sensor.magnetic_field_uncalibrated',
+#                             'android.sensor.proximity',
+#                             'android.sensor.magnetic_field',
+#                             'android.sensor.gravity',
+#                             'android.sensor.light',
+#                             'android.sensor.gesture',
+#                             'speed',
+#                             'activityrecognition',
+#                             'time']
 
-sensors_to_exclude_third = ['com.google.sensor.internal_temperature',
-                            'com.qti.sensor.amd',
-                            'com.qti.sensor.rmd',
-                            'android.sensor.step_detector',
-                            'android.sensor.tilt_detector',
-                            'android.sensor.geomagnetic_rotation_vector',
-                            'android.sensor.step_counter',
-                            'android.sensor.pressure',
-                            'android.sensor.magnetic_field_uncalibrated',
-                            'android.sensor.proximity',
-                            'android.sensor.magnetic_field',
-                            'android.sensor.gravity',
-                            'android.sensor.light',
-                            'android.sensor.gesture',
-                            'activityrecognition',
-                            'time']
+# sensors_to_exclude_third = ['com.google.sensor.internal_temperature',
+#                             'com.qti.sensor.amd',
+#                             'com.qti.sensor.rmd',
+#                             'android.sensor.step_detector',
+#                             'android.sensor.tilt_detector',
+#                             'android.sensor.geomagnetic_rotation_vector',
+#                             'android.sensor.step_counter',
+#                             'android.sensor.pressure',
+#                             'android.sensor.magnetic_field_uncalibrated',
+#                             'android.sensor.proximity',
+#                             'android.sensor.magnetic_field',
+#                             'android.sensor.gravity',
+#                             'android.sensor.light',
+#                             'android.sensor.gesture',
+#                             'activityrecognition',
+#                             'time']
+
+PROTOTYPE_SENSORS = [
+    'android.sensor.accelerometer',
+    'android.sensor.gyroscope',
+    'android.sensor.linear_acceleration',
+    'android.sensor.magnetic_field',
+    'android.sensor.rotation_vector'
+]
+
+FEATURES = ['max', 'min', 'mean', 'std']
+
+PROTOTYPE_SENSOR_FEATURES = [f for s in PROTOTYPE_SENSORS for f in [s + "#" + feature for feature in FEATURES]]
+
+NA_THRESHOLD = 0.7
+
+# 'gravity'
+# 'android.sensor.game_rotation_vector'
+# 'android.sensor.orientation'
+# 'android.sensor.gyroscope_uncalibrated'
+# 'sound'
+# 'android.sensor.step_counter'
+# 'android.sensor.proximity'
+# 'android.sensor.pressure'
 ########################################################################################
 
 ###################### classification algorithms parameters ##############################
@@ -181,13 +203,13 @@ REPEAT = 30
 # random forest
 PAR_RF_ESTIMATOR = 100
 # neural network
-PAR_NN_NEURONS = {1: 900, 2: 880, 3: 600}
-PAR_NN_ALPHA = {1: 0.0001, 2: 0.000002, 3: 0.000006}
+PAR_NN_NEURONS = 880
+PAR_NN_ALPHA = 0.000002
 PAR_NN_MAX_ITER = 600
 PAR_NN_TOL = -1
 # support vector machine
-PAR_SVM_C = {1: 180,2: 100, 3: 100}
-PAR_SVM_GAMMA = {1: 1.1 ,2: 0.1, 3:0.1}
+PAR_SVM_C = 100
+PAR_SVM_GAMMA = 0.1
 
 ################################### data type for dataset ##################################
 DATASET_DATA_TYPE = {"user_id": int}
