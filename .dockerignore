@@ -1,5 +1,7 @@
-TransportationData/
+data/
+models/
 results/
+TransportationData/
 __pycache__/
 *.pyc
 .git/

@@ -172,19 +172,6 @@ CV_PERC = 0.0
 #                             'activityrecognition',
 #                             'time']
 
-PROTOTYPE_SENSORS = [
-    'android.sensor.accelerometer',
-    'android.sensor.gyroscope',
-    'android.sensor.linear_acceleration',
-    'android.sensor.magnetic_field',
-    'android.sensor.rotation_vector'
-]
-
-FEATURES = ['max', 'min', 'mean', 'std']
-
-PROTOTYPE_SENSOR_FEATURES = [f for s in PROTOTYPE_SENSORS for f in [s + "#" + feature for feature in FEATURES]]
-
-NA_THRESHOLD = 0.7
 
 # 'gravity'
 # 'android.sensor.game_rotation_vector'
@@ -214,3 +201,38 @@ PAR_SVM_GAMMA = 0.1
 ################################### data type for dataset ##################################
 DATASET_DATA_TYPE = {"user_id": int}
 
+
+
+
+from pathlib import Path
+
+
+DATA_PATH = Path.cwd() / "data"
+RAW_DATA_FILE_NAME = "raw_data.tar.gz"
+RAW_DATA_EXTRACTED_PATH = DATA_PATH / "raw_data"
+CLEANED_DATA_PATH = DATA_PATH / "cleaned_data"
+
+TRANSPORT_MODES = ["bus", "car", "train"]
+
+SENSORS = [
+    'accelerometer',
+    'gyroscope',
+    'linear_acceleration',
+    'magnetic_field',
+    'rotation_vector'
+]
+
+FEATURES = ['max', 'min', 'mean', 'std']
+
+SENSOR_FEATURES = [f for s in SENSORS for f in [s + "#" + feature for feature in FEATURES]]
+
+NA_THRESHOLD = 0.7
+
+WINDOW_SIZE_SECONDS: float = 5
+WINDOW_NEXT_STEP_SECONDS: float = 2.5
+
+from enum import Enum
+
+class RawDataFieldLocation(Enum):
+    TIME = 0
+    SENSOR_TYPE = 1

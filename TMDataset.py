@@ -7,7 +7,7 @@ import shutil
 import json
 from os import listdir
 import pandas as pd
-import const
+import constants
 import util
 import sys
 import math
@@ -56,24 +56,24 @@ class TMDataset:
     # (3)if **time** have incorrect values ("/", ">", "<", "-", "_"...) --> delete file
     # (4)if file is empty --> delete file
     def clean_files(self):
-        if os.path.exists(const.CLEAN_LOG):
-            os.remove(const.CLEAN_LOG)
+        if os.path.exists(constants.CLEAN_LOG):
+            os.remove(constants.CLEAN_LOG)
 
         patternNegative = re.compile("-[0-9]+")
         patternNumber = re.compile("[0-9]+")
 
         # create directory for correct files
-        if not os.path.exists(const.DIR_RAW_DATA_CORRECT):
-            os.makedirs(const.DIR_RAW_DATA_CORRECT)
+        if not os.path.exists(constants.DIR_RAW_DATA_CORRECT):
+            os.makedirs(constants.DIR_RAW_DATA_CORRECT)
         else:
-            shutil.rmtree(const.DIR_RAW_DATA_CORRECT)
-            os.makedirs(const.DIR_RAW_DATA_CORRECT)
+            shutil.rmtree(constants.DIR_RAW_DATA_CORRECT)
+            os.makedirs(constants.DIR_RAW_DATA_CORRECT)
 
         # create log file
-        logging.basicConfig(filename=const.CLEAN_LOG, level=logging.INFO)
+        logging.basicConfig(filename=constants.CLEAN_LOG, level=logging.INFO)
         logging.info("CLEANING FILES...")
         print("CLEAN FILES...")
-        filenames = listdir(const.DIR_RAW_DATA_ORIGINAL)
+        filenames = listdir(constants.DIR_RAW_DATA_ORIGINAL)
         # iterate on files in raw data directory - delete files with incorrect rows
         nFiles = 0
         deletedFiles = 0
@@ -83,8 +83,8 @@ class TMDataset:
                 nFiles += 1
                 # to_delete be 1 if the file have to be excluded from the dataset
                 to_delete = 0
-                with open(os.path.join(const.DIR_RAW_DATA_ORIGINAL, file), encoding='utf-8', errors='replace') as current_file:
-                    res_file_path = os.path.join(const.DIR_RAW_DATA_CORRECT, file)
+                with open(os.path.join(constants.DIR_RAW_DATA_ORIGINAL, file), encoding='utf-8', errors='replace') as current_file:
+                    res_file_path = os.path.join(constants.DIR_RAW_DATA_CORRECT, file)
                     with open(res_file_path, "w", encoding='utf-8') as file_result:
                         for line in current_file:
                             line_data = line.split(",")
@@ -104,7 +104,7 @@ class TMDataset:
                                 if re.match(patternNumber, line_data[0]) is None:
                                     to_delete = 1
                                 current_time = line_data[0]
-                            if line_data[1] in const.PROTOTYPE_SENSORS:
+                            if line_data[1] in constants.PROTOTYPE_SENSORS:
                                 line_result = current_time + "," + line_data[1] + "," + endLine
                                 file_result.write(line_result)
 
@@ -116,9 +116,9 @@ class TMDataset:
 
         # delete empty files
         file_empty = []
-        filenames = listdir(const.DIR_RAW_DATA_CORRECT)
+        filenames = listdir(constants.DIR_RAW_DATA_CORRECT)
         for file in filenames:
-            full_path = os.path.join(const.DIR_RAW_DATA_CORRECT, file)
+            full_path = os.path.join(constants.DIR_RAW_DATA_CORRECT, file)
             # check if file is empty
             if (os.path.getsize(full_path)) == 0:
                 deletedFiles += 1
@@ -128,10 +128,10 @@ class TMDataset:
 
         pattern = re.compile("^[0-9]+,[a-z,A-Z._]+,[-,0-9a-zA-Z.]+$", re.VERBOSE)
         # pattern = re.compile("^[0-9]+,[a-z,A-Z,\.,_]+,[-,0-9,a-z,A-Z,\.]+$", re.VERBOSE)
-        filenames = listdir(const.DIR_RAW_DATA_CORRECT)
+        filenames = listdir(constants.DIR_RAW_DATA_CORRECT)
         for file in filenames:
             n_error = 0
-            full_path = os.path.join(const.DIR_RAW_DATA_CORRECT, file)
+            full_path = os.path.join(constants.DIR_RAW_DATA_CORRECT, file)
             # check if all row respect regular expression
             with open(full_path, encoding='utf-8', errors='replace') as f:
                 for line in f:
@@ -144,20 +144,20 @@ class TMDataset:
 
         logging.info("  Tot files in Dataset : " + str(nFiles))
         logging.info("  Tot deleted files : " + str(deletedFiles))
-        logging.info("  Remaining files : " + str(len(listdir(const.DIR_RAW_DATA_CORRECT))))
+        logging.info("  Remaining files : " + str(len(listdir(constants.DIR_RAW_DATA_CORRECT))))
 
-        self.n_files = len(listdir(const.DIR_RAW_DATA_CORRECT))
+        self.n_files = len(listdir(constants.DIR_RAW_DATA_CORRECT))
         logging.info("END CLEAN FILES")
         print("END CLEAN.... results on log file")
 
     # transform sensor raw data in orientation independent data (with magnitude metric)
     def transform_raw_data(self):
         if not self.sintetic:
-            dir_src = const.DIR_RAW_DATA_CORRECT
-            dir_dst = const.DIR_RAW_DATA_TRANSFORM
+            dir_src = constants.DIR_RAW_DATA_CORRECT
+            dir_dst = constants.DIR_RAW_DATA_TRANSFORM
         else:
-            dir_src = const.DIR_SINTETIC_RAW_DATASET
-            dir_dst = const.DIR_SINTETIC_RAW_DATA_TRANSFORM
+            dir_src = constants.DIR_SINTETIC_RAW_DATASET
+            dir_dst = constants.DIR_SINTETIC_RAW_DATA_TRANSFORM
 
         if not os.path.exists(dir_src) and not self.sintetic:
             self.clean_files()
@@ -187,11 +187,11 @@ class TMDataset:
                             user = "," + line_data[(len(line_data) - 2)] if self.sintetic else ""
                             target = "," + line_data[(len(line_data) - 1)] if self.sintetic else ""
                             target = target.replace("\n","")
-                            if line_data[1] in const.SENSORS_TO_EXCLUDE_FROM_DATASET:
+                            if line_data[1] in constants.SENSORS_TO_EXCLUDE_FROM_DATASET:
                                 continue
-                            if line_data[1] not in const.SENSOR_TO_TRANSFORM_MAGNITUDE:  # not to transofrom
-                                if line_data[1] not in const.SENSOR_TO_TRANSFROM_4ROTATION:  # not to trasform (4 rotation)
-                                    if line_data[1] not in const.SENSOR_TO_TAKE_FIRST:  # not to take only first data
+                            if line_data[1] not in constants.SENSOR_TO_TRANSFORM_MAGNITUDE:  # not to transofrom
+                                if line_data[1] not in constants.SENSOR_TO_TRANSFROM_4ROTATION:  # not to trasform (4 rotation)
+                                    if line_data[1] not in constants.SENSOR_TO_TAKE_FIRST:  # not to take only first data
                                         # report the line as it is
                                         current_sensor = line_data[1]
                                         line_result = current_time + "," + current_sensor + "," + endLine
@@ -223,12 +223,12 @@ class TMDataset:
     # fill tm, users, sensors data structures
     def __fill_data_structure(self):
         if not self.sintetic:
-            dir_src = const.DIR_RAW_DATA_TRANSFORM
+            dir_src = constants.DIR_RAW_DATA_TRANSFORM
             if not os.path.exists(dir_src):
                 print("You should clean files first!")
                 return -1
         else:
-            dir_src = const.DIR_SINTETIC_RAW_DATA_TRANSFORM
+            dir_src = constants.DIR_SINTETIC_RAW_DATA_TRANSFORM
 
         filenames = listdir(dir_src)
 
@@ -339,11 +339,11 @@ class TMDataset:
     # fill directory with all file consistent with the header without features
     def create_header_files(self):
         if self.sintetic:
-            dir_src = const.DIR_SINTETIC_RAW_DATA_TRANSFORM
-            dir_dst = const.DIR_SINTETIC_RAW_DATA_HEADER
+            dir_src = constants.DIR_SINTETIC_RAW_DATA_TRANSFORM
+            dir_dst = constants.DIR_SINTETIC_RAW_DATA_HEADER
         else:
-            dir_src = const.DIR_RAW_DATA_TRANSFORM
-            dir_dst = const.DIR_RAW_DATA_HEADER
+            dir_src = constants.DIR_RAW_DATA_TRANSFORM
+            dir_dst = constants.DIR_RAW_DATA_HEADER
 
         if not os.path.exists(dir_src):
             self.transform_raw_data()
@@ -427,11 +427,11 @@ class TMDataset:
     # fill directory with all file consistent with the featured header divided in time window
     def __create_time_files(self):
         if self.sintetic:
-            dir_src = const.DIR_SINTETIC_RAW_DATA_HEADER
-            dir_dst = const.DIR_SINTETIC_RAW_DATA_FEATURES
+            dir_src = constants.DIR_SINTETIC_RAW_DATA_HEADER
+            dir_dst = constants.DIR_SINTETIC_RAW_DATA_FEATURES
         else:
-            dir_src = const.DIR_RAW_DATA_HEADER
-            dir_dst = const.DIR_RAW_DATA_FEATURES
+            dir_src = constants.DIR_RAW_DATA_HEADER
+            dir_dst = constants.DIR_RAW_DATA_FEATURES
 
         # create files with header if not exist
         if not os.path.exists(dir_src):
@@ -453,7 +453,7 @@ class TMDataset:
         header_string += ",target,user\n"
 
         # compute window dimension
-        window_dim = int(const.SAMPLE_FOR_SECOND * const.WINDOW_DIMENSION)
+        window_dim = int(constants.SAMPLE_FOR_SECOND * constants.WINDOW_DIMENSION)
 
         # loop on header files
         filenames = listdir(dir_src)
@@ -499,14 +499,9 @@ class TMDataset:
 
                     # define time range
                     end_current = start_current + window_dim
-                    if end_time <= end_current:
-                        range_current = list(range(start_current, end_time, 1))
-                        start_current = end_time
-                    else:
-                        range_current = list(range(start_current, end_current, 1))
-                        start_current = end_current
                     # df of the current time window
-                    df_current = df_file.loc[df_file['time'].isin(range_current)]
+                    # should be df_current = df_file.loc
+                    df_current: pd.DataFrame = df_file.loc[df_file['time'].between(start_current, end_current)]
                     nfeature = 0
                     if self.sintetic:
                         if df_current.loc[:, "target"].size > 0:
@@ -598,20 +593,24 @@ class TMDataset:
                         line = line + "," + str(current_tm) + "," + str(current_user) + "\n"
                         destination_file.write(line)
                     i += 1
-                    if start_current == end_time:
+                    if end_time <= end_current:
                         break
+                    if end_time <= end_current:
+                        start_current = end_time
+                    else:
+                        start_current = end_current
         print("END DIVIDE FILES IN TIME WINDOWS AND COMPUTE FEATURES......")
 
     # create dataset file
     def __create_dataset(self):
         if self.sintetic:
-            dir_src = const.DIR_SINTETIC_RAW_DATA_FEATURES
-            dir_dst = const.DIR_SINTETIC_DATASET
-            file_dst = const.SINTETIC_FILE_DATASET
+            dir_src = constants.DIR_SINTETIC_RAW_DATA_FEATURES
+            dir_dst = constants.DIR_SINTETIC_DATASET
+            file_dst = constants.SINTETIC_FILE_DATASET
         else:
-            dir_src = const.DIR_RAW_DATA_FEATURES
-            dir_dst = const.DIR_DATASET
-            file_dst = const.FILE_DATASET
+            dir_src = constants.DIR_RAW_DATA_FEATURES
+            dir_dst = constants.DIR_DATASET
+            file_dst = constants.FILE_DATASET
 
         # create files with time window if not exsist
         if not os.path.exists(dir_src):
@@ -647,18 +646,18 @@ class TMDataset:
     # splid passed dataframe into test, train and cv
     def __split_dataset(self, df):
         if self.sintetic:
-            dir_src = const.DIR_SINTETIC_DATASET
-            file_training_dst = const.SINTETIC_FILE_TRAINING
-            file_test_dst = const.SINTETIC_FILE_TEST
-            file_cv_dst = const.SINTETIC_FILE_CV
+            dir_src = constants.DIR_SINTETIC_DATASET
+            file_training_dst = constants.SINTETIC_FILE_TRAINING
+            file_test_dst = constants.SINTETIC_FILE_TEST
+            file_cv_dst = constants.SINTETIC_FILE_CV
         else:
-            dir_src = const.DIR_DATASET
-            file_training_dst = const.FILE_TRAINING
-            file_test_dst = const.FILE_TEST
-            file_cv_dst = const.FILE_CV
+            dir_src = constants.DIR_DATASET
+            file_training_dst = constants.FILE_TRAINING
+            file_test_dst = constants.FILE_TEST
+            file_cv_dst = constants.FILE_CV
 
-        training, cv, test = util.split_data(df, train_perc=const.TRAINING_PERC, cv_perc=const.CV_PERC,
-                                        test_perc=const.TEST_PERC)
+        training, cv, test = util.split_data(df, train_perc=constants.TRAINING_PERC, cv_perc=constants.CV_PERC,
+                                        test_perc=constants.TEST_PERC)
         training.to_csv(dir_src + '/' + file_training_dst, index=False)
         test.to_csv(dir_src + '/' + file_test_dst, index=False)
         cv.to_csv(dir_src + '/' + file_cv_dst, index=False)
@@ -672,7 +671,7 @@ class TMDataset:
     # for each sensors analyze user support
     # put support result in sensor_support.csv [sensor,nr_user,list_users,list_classes]
     def analyze_sensors_support(self):
-        if not os.path.exists(const.DIR_RAW_DATA_CORRECT):
+        if not os.path.exists(constants.DIR_RAW_DATA_CORRECT):
             print("You should pre-processing files first!")
             return -1
         if len(self.users) == 0 or len(self.sensors) == 0 or len(self.tm) == 0:
@@ -682,7 +681,7 @@ class TMDataset:
         index = list(range(len(self.sensors)))
         df_sensor_analysis = pd.DataFrame(index=index, columns=columns)
         df_sensor_analysis['sensor'] = self.sensors
-        filenames = listdir(const.DIR_RAW_DATA_CORRECT)
+        filenames = listdir(constants.DIR_RAW_DATA_CORRECT)
         n_users = []
         users_list = []
         classes_list = []
@@ -692,7 +691,7 @@ class TMDataset:
             for file in filenames:
                 if file.endswith(".csv"):
                     data = file.split("_")
-                    f = open(os.path.join(const.DIR_RAW_DATA_CORRECT, file), encoding='utf-8', errors='replace')
+                    f = open(os.path.join(constants.DIR_RAW_DATA_CORRECT, file), encoding='utf-8', errors='replace')
                     if data[2] not in class_list:
                         class_list.append(data[2])
                     reader = csv.reader(f, delimiter=",")
@@ -714,10 +713,10 @@ class TMDataset:
 
         # remove result file if exists
         try:
-            os.remove(const.FILE_SUPPORT)
+            os.remove(constants.FILE_SUPPORT)
         except OSError:
             pass
-        df_sensor_analysis.to_csv(const.FILE_SUPPORT, index=False)
+        df_sensor_analysis.to_csv(constants.FILE_SUPPORT, index=False)
 
     # analyze dataset composition in term of class and user contribution fill balance_time
     # with minimum number of window for transportation mode
@@ -727,13 +726,13 @@ class TMDataset:
         self.__create_dataset()
 
         if self.sintetic:
-            dir_src = const.DIR_SINTETIC_DATASET
-            file_src = const.SINTETIC_FILE_DATASET
-            file_dst = const.SINTETIC_FILE_DATASET_BALANCED
+            dir_src = constants.DIR_SINTETIC_DATASET
+            file_src = constants.SINTETIC_FILE_DATASET
+            file_dst = constants.SINTETIC_FILE_DATASET_BALANCED
         else:
-            dir_src = const.DIR_DATASET
-            file_src = const.FILE_DATASET
-            file_dst = const.FILE_DATASET_BALANCED
+            dir_src = constants.DIR_DATASET
+            file_src = constants.FILE_DATASET
+            file_dst = constants.FILE_DATASET_BALANCED
 
         # study dataset composition to balance
         if not os.path.exists(dir_src):
@@ -775,22 +774,22 @@ class TMDataset:
 
     @property
     def get_train(self):
-        return pd.read_csv(const.DIR_DATASET + "/" + const.FILE_TRAINING)
+        return pd.read_csv(constants.DIR_DATASET + "/" + constants.FILE_TRAINING)
 
     @property
     def get_test(self):
-        return pd.read_csv(const.DIR_DATASET + "/" + const.FILE_TEST)
+        return pd.read_csv(constants.DIR_DATASET + "/" + constants.FILE_TEST)
 
     @property
     def get_cv(self):
-        return pd.read_csv(const.DIR_DATASET + "/" + const.FILE_CV)
+        return pd.read_csv(constants.DIR_DATASET + "/" + constants.FILE_CV)
 
     @property
     def get_dataset(self):
-        if const.SINTETIC_LEARNING:
-            return pd.read_csv(const.DIR_SINTETIC_DATASET + "/" + const.SINTETIC_FILE_DATASET_BALANCED)
+        if constants.SINTETIC_LEARNING:
+            return pd.read_csv(constants.DIR_SINTETIC_DATASET + "/" + constants.SINTETIC_FILE_DATASET_BALANCED)
         else:
-            return pd.read_csv(const.DIR_DATASET + "/" + const.FILE_DATASET_BALANCED)
+            return pd.read_csv(constants.DIR_DATASET + "/" + constants.FILE_DATASET_BALANCED)
 
 
     def get_sensor_features(self, sensor):

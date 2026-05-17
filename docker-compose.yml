@@ -1,63 +1,29 @@
+x-common-config: &common-config
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: tmd-tcct-pipeline:latest  # Forces Docker to build ONE image and reuse it
+  volumes:
+    - ./data:/app/data
+    - ./logs:/app/logs
+  environment:
+    - PYTHONUNBUFFERED=1
+
 services:
- 
-  # Default service: runs only TMDetection.py
-  # Usage: docker compose up --build
-  train-models:
+  extract:
+    <<: *common-config
     profiles:
-      - train-models
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: tmd-train-models
-    volumes:
-      - ./TransportationData:/app/TransportationData
-      - ./logs:/app/logs
-      - ./models:/app/models
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: >
-      bash -c "
-        echo '=== Training models ===' &&
-        python TMDetection.py
-      "
- 
-  # Download service: downloads the raw dataset files only
-  # Usage: docker compose --profile download up --build
-  download:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: tmd-download
+      - extract
+    entrypoint: ["python", "preprocess.py", "--extract"]
+
+  clean:
+    <<: *common-config
     profiles:
-      - download
-    volumes:
-      - ./TransportationData:/app/TransportationData
-      - ./logs:/app/logs
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: >
-      bash -c "
-        echo '=== Downloading dataset ===' &&
-        python download_dataset.py
-      "
- 
-  # Preprocess service: processes raw data into a balanced dataset
-  # Usage: docker compose --profile preprocess up --build
+      - clean
+    entrypoint: ["python", "preprocess.py", "--clean"]
+
   preprocess:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: tmd-preprocess
+    <<: *common-config
     profiles:
-      - preprocess  
-    volumes:
-      - ./TransportationData:/app/TransportationData
-      - ./logs:/app/logs
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: >
-      bash -c "
-        echo '=== Processing raw data ===' &&
-        python TMDataset.py
-      "
- 
+      - preprocess
+    entrypoint: ["python", "preprocess.py", "--all"]
