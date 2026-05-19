@@ -24,6 +24,12 @@ services:
       - clean
     entrypoint: ["python", "preprocess.py", "--clean"]
 
+  transform:
+    <<: *common-config
+    profiles:
+      - transform
+    entrypoint: ["python", "preprocess.py", "--transform"]
+
   preprocess:
     <<: *common-config
     profiles:
