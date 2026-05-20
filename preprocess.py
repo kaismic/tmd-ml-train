@@ -33,10 +33,15 @@ def clean_file(input_path: os.PathLike, output_path: os.PathLike) -> None:
     """
     Clean a raw data file by:
     - Removing rows where the second column (sensor type) does not end with a valid sensor type
+    - Removing rows where the first column (time) is empty or does not contain a valid timestamp
+    - Stripping "android.sensor." prefix from the sensor type and keeping only the sensor name
+    - Removing any non-alphanumeric characters from the time and sensor type fields
     """
 
-    # int_pat = re.compile(r'^[-]?\d+$')
+    if (os.path.getsize(input_path) == 0):
+        return
 
+    has_output: bool = False
     with open(input_path, "r", encoding='utf-8', errors='replace') as input_file, \
          open(output_path, "w", encoding="utf-8", newline='') as output_file:
 
@@ -47,20 +52,22 @@ def clean_file(input_path: os.PathLike, output_path: os.PathLike) -> None:
             if len(row) == 0:
                 continue
             else:
-                # TODO test if this works
-                row = [re.sub(r'[^a-zA-Z0-9]', '', val) for val in row]
+                row = [re.sub(r'[^a-zA-Z0-9._-]', '', val) for val in row]
                 remove: bool = False
-                time: str = row[constants.RawDataFieldLocation.TIME.value]
-                if not time:
+                time_str: str = row[constants.RawDataFieldLocation.TIME.value]
+                sensor_type_str: str = row[constants.RawDataFieldLocation.SENSOR_TYPE.value]
+                if not time_str:
                     remove = True
-                elif not any(row[constants.RawDataFieldLocation.SENSOR_TYPE.value].endswith('.' + sensor) for sensor in constants.SENSORS):
+                elif not any(sensor_type_str.endswith('.' + sensor) for sensor in constants.SENSORS):
                     remove = True
-
-                if not remove:
-                    # Remove leading '-' from time if present
-                    # if time.startswith('-'):
-                        # row[constants.RawDataFieldLocation.TIME.value] = time[1:]
+                time_values = re.findall(r'\d+', time_str)
+                if time_values and not remove:
+                    row[constants.RawDataFieldLocation.TIME.value] = time_values[0]
+                    row[constants.RawDataFieldLocation.SENSOR_TYPE.value] = sensor_type_str.split('.')[-1]
                     writer.writerow(row)
+                    has_output = True
+    if not has_output:
+        os.remove(output_path)
 
 def clean_files() -> None:
     """
@@ -73,7 +80,10 @@ def clean_files() -> None:
     processing_files = list(constants.RAW_DATA_EXTRACTED_PATH.rglob("*.csv"))
     print(f"Total files to process: {len(processing_files)}")
 
-    for input_path in tqdm(processing_files, desc="Cleaning files"):
+    iter =  tqdm(processing_files, desc="Cleaning files")
+    for input_path in processing_files:
+        iter.update()
+        print(iter)
         _, _, transport_mode, *_ = input_path.name.split("_")
         if transport_mode.lower() not in constants.TRANSPORT_MODES:
             continue
@@ -107,10 +117,8 @@ def transform_file(input_path: os.PathLike, output_path: os.PathLike) -> None:
             names=['time', 'sensor_type', 'val1', 'val2', 'val3', 'val4', 'val5']
         )
 
-        print(df.head())
-
         curr_window_start: int = 0
-        i: int = 0
+        index: int = 0
         last_time: int = df['time'].iloc[-1]
 
         writer.writerow(['time'] + constants.SENSOR_FEATURES_IN_ORDER)
@@ -120,29 +128,32 @@ def transform_file(input_path: os.PathLike, output_path: os.PathLike) -> None:
             if curr_window_end > last_time:
                 break
             window: pd.DataFrame = df[(df['time'] >= curr_window_start) & (df['time'] < curr_window_end)]
+            curr_window_start += window_next_step_ms
+            all_sensors_in_window = window['sensor_type'].unique()
+            # If not all sensors are present in the window, skip it. This is a design choice to ensure that we only compute features for windows that have data from all sensors, which may be important for certain machine learning models that expect a complete feature set. However, this also means that we will lose data from windows that are missing one or more sensors, which could potentially reduce the amount of training data available. Depending on the specific use case and the importance of having a complete feature set versus having more training data, this decision may need to be revisited.
+            if (all_sensors_in_window.size < len(constants.SENSORS)):
+                continue
+            transformed_features = {}
             for sensor in constants.SENSORS:
-                transformed_features = {}
                 transformed_values: pd.Series = pd.Series()
                 valid: bool = False
                 sensor_window: pd.DataFrame = window[window['sensor_type'] == sensor]
-                if (not sensor_window.empty):
-                    if (sensor in constants.VECTOR_TRANSFORM_SENSORS):
-                        transformed_values = (sensor_window[['val1', 'val2', 'val3']].pow(2).sum(axis=1)).pow(0.5)
-                        valid = True
-                    elif (sensor in constants.SCALAR_TRANSFORM_SENSORS):
-                        # Compute sin(θ/2) from w component of rotation vector
-                        # But I'm not sure if this is even necessary or useful, since the rotation vector already represents orientation in a compact form.
-                        transformed_values = sensor_window['val4'].apply(math.acos).apply(math.sin)
-                        valid = True
-                    if valid:
-                        assert not transformed_values.empty, "Transformed values should not be empty when valid is True"
-                        transformed_features[f"{sensor}#mean"] = transformed_values.mean()
-                        transformed_features[f"{sensor}#std"] = transformed_values.std()
-                        transformed_features[f"{sensor}#min"] = transformed_values.min()
-                        transformed_features[f"{sensor}#max"] = transformed_values.max()
-                        writer.writerow([i] + [transformed_features[sensor_feature] for sensor_feature in constants.SENSOR_FEATURES_IN_ORDER])
-            curr_window_start += window_next_step_ms
-            i += 1
+                if (sensor in constants.VECTOR_TRANSFORM_SENSORS):
+                    transformed_values = (sensor_window[['val1', 'val2', 'val3']].pow(2).sum(axis=1)).pow(0.5)
+                    valid = True
+                elif (sensor in constants.SCALAR_TRANSFORM_SENSORS):
+                    # Compute sin(θ/2) from w component of rotation vector
+                    # But I'm not sure if this is even necessary or useful, since the rotation vector already represents orientation in a compact form.
+                    transformed_values = sensor_window['val4'].apply(math.acos).apply(math.sin)
+                    valid = True
+                if valid:
+                    assert not transformed_values.empty, "Transformed values should not be empty when valid is True"
+                    transformed_features[f"{sensor}#mean"] = transformed_values.mean()
+                    transformed_features[f"{sensor}#std"] = transformed_values.std()
+                    transformed_features[f"{sensor}#min"] = transformed_values.min()
+                    transformed_features[f"{sensor}#max"] = transformed_values.max()
+            writer.writerow([index] + [transformed_features[sensor_feature] for sensor_feature in constants.SENSOR_FEATURES_IN_ORDER])
+            index += 1
 
 def transform_files() -> None:
     """
@@ -153,8 +164,11 @@ def transform_files() -> None:
     processing_files = list(constants.CLEANED_DATA_PATH.rglob("*.csv"))
     print(f"Total files to process for transformation: {len(processing_files)}")
 
-    # for input_path in tqdm(processing_files, desc="Transforming files"):
+
+    iter =  tqdm(processing_files, desc="Transforming files")
     for input_path in processing_files:
+        iter.update()
+        print(iter)
         output_file_path = constants.TRANSFORMED_DATA_PATH / input_path.relative_to(constants.CLEANED_DATA_PATH)
         os.makedirs(output_file_path.parent, exist_ok=True)
         transform_file(input_path, output_file_path)

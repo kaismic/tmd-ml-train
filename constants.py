@@ -224,17 +224,17 @@ SENSORS = [
 ]
 
 # Compute magnitude from 3-axis
-VECTOR_TRANSFORM_SENSORS = [
+VECTOR_TRANSFORM_SENSORS = (
     'accelerometer',
     'gyroscope',
     'linear_acceleration',
     'magnetic_field'
-]
+)
 
 # Compute sin(θ/2) from w component of rotation vector
-SCALAR_TRANSFORM_SENSORS = [
+SCALAR_TRANSFORM_SENSORS = (
     'rotation_vector'
-]
+)
 
 FEATURES = ['mean', 'std', 'min', 'max']
 
@@ -242,7 +242,7 @@ SENSOR_FEATURES_IN_ORDER = [f"{sensor}#{feature}" for sensor in SENSORS for feat
 
 NA_THRESHOLD = 0.7
 
-WINDOW_SIZE_SECONDS: float = 15
+WINDOW_SIZE_SECONDS: float = 10
 WINDOW_NEXT_STEP_SECONDS: float = 5
 
 from enum import Enum
