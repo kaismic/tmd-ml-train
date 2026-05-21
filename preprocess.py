@@ -179,23 +179,22 @@ def transform_files() -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
+    parser.add_argument(
         "--all",
         action="store_true",
-        help="Extract and clean raw data files"
+        help="Run all preprocessing steps (extract, clean, transform)"
     )
-    group.add_argument(
+    parser.add_argument(
         "--extract",
         action="store_true",
         help="Extract raw data files"
     )
-    group.add_argument(
+    parser.add_argument(
         "--clean",
         action="store_true",
         help="Clean extracted raw data files"
     )
-    group.add_argument(
+    parser.add_argument(
         "--transform",
         action="store_true",
         help="Transform cleaned data files"
