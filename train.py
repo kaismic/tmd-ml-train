@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import constants
-import util
+import utils
 from skl2onnx import convert_sklearn
 from skl2onnx.helpers.onnx_helper import save_onnx_model
 from skl2onnx.common.data_types import FloatTensorType
@@ -19,7 +19,7 @@ def create_dataframe() -> pd.DataFrame:
     result_df = pd.DataFrame()
     for file in input_files:
         df = pd.read_csv(file)
-        df['transport_mode'] = constants.TRANSPORT_MODES[util.get_transport_mode_from_path(file)]
+        df['transport_mode'] = constants.TRANSPORT_MODES[utils.get_transport_mode_from_path(file)]
         result_df = pd.concat([result_df, df], ignore_index=True)
 
     print(f"Final DataFrame shape: {result_df.shape}")

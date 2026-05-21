@@ -8,7 +8,7 @@ import os
 import csv
 from tqdm import tqdm
 
-import util
+import utils
 
 # csv.field_size_limit(2**31 - 1)
 
@@ -86,7 +86,7 @@ def clean_files() -> None:
     for input_path in processing_files:
         iter.update()
         print(iter)
-        transport_mode = util.get_transport_mode_from_path(input_path)
+        transport_mode = utils.get_transport_mode_from_path(input_path)
         if transport_mode.lower() not in constants.TRANSPORT_MODES:
             continue
 

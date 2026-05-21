@@ -1,8 +1,4 @@
-data/
+logs/
 models/
-results/
-TransportationData/
-__pycache__/
-*.pyc
-.git/
-*.onnx
+data/
+test1.py
