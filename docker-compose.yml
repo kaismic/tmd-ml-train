@@ -6,12 +6,23 @@ x-common-config: &common-config
   volumes:
     - ./data:/app/data
     - ./logs:/app/logs
+    - ./models:/app/models
   environment:
     - PYTHONUNBUFFERED=1
   tty: true
   stdin_open: true
 
 services:
+  # ── Dev container ────────────────────────────────────────────────────────────
+  # Used by .devcontainer/devcontainer.json. No entrypoint so VS Code can attach
+  # to a long-running shell without triggering a pipeline step.
+  dev:
+    <<: *common-config
+    profiles:
+      - dev
+    command: sleep infinity
+
+  # ── Pipeline steps ───────────────────────────────────────────────────────────
   extract:
     <<: *common-config
     profiles:
@@ -35,3 +46,9 @@ services:
     profiles:
       - preprocess
     entrypoint: ["python", "preprocess.py", "--all"]
+
+  train:
+    <<: *common-config
+    profiles:
+      - train
+    entrypoint: ["python", "train.py"]

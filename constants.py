@@ -212,8 +212,13 @@ RAW_DATA_FILE_NAME = "raw_data.tar.gz"
 RAW_DATA_EXTRACTED_PATH = DATA_PATH / "raw_data"
 CLEANED_DATA_PATH = DATA_PATH / "cleaned_data"
 TRANSFORMED_DATA_PATH = DATA_PATH / "transformed_data"
+MODELS_PATH = Path.cwd() / "models"
 
-TRANSPORT_MODES = ["bus", "car", "train"]
+TRANSPORT_MODES = {
+    'bus': 0,
+    'car': 1,
+    'train': 2
+}
 
 SENSORS = [
     'accelerometer',
@@ -230,6 +235,7 @@ VECTOR_TRANSFORM_SENSORS = (
     'linear_acceleration',
     'magnetic_field'
 )
+
 
 # Compute sin(θ/2) from w component of rotation vector
 SCALAR_TRANSFORM_SENSORS = (

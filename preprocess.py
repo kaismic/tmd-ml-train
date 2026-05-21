@@ -8,6 +8,8 @@ import os
 import csv
 from tqdm import tqdm
 
+import util
+
 # csv.field_size_limit(2**31 - 1)
 
 def extract_raw_data() -> None:
@@ -84,7 +86,7 @@ def clean_files() -> None:
     for input_path in processing_files:
         iter.update()
         print(iter)
-        _, _, transport_mode, *_ = input_path.name.split("_")
+        transport_mode = util.get_transport_mode_from_path(input_path)
         if transport_mode.lower() not in constants.TRANSPORT_MODES:
             continue
 
@@ -106,6 +108,8 @@ def transform_file(input_path: os.PathLike, output_path: os.PathLike) -> None:
     - The output CSV will have columns: time (window index), followed by features for each sensor in the order defined by constants.SENSOR_FEATURES_IN_ORDER.
     """
 
+    has_output: bool = False
+
     with open(output_path, "w", encoding="utf-8", newline='') as output_file:
         writer = csv.writer(output_file)
 
@@ -118,10 +122,9 @@ def transform_file(input_path: os.PathLike, output_path: os.PathLike) -> None:
         )
 
         curr_window_start: int = 0
-        index: int = 0
         last_time: int = df['time'].iloc[-1]
 
-        writer.writerow(['time'] + constants.SENSOR_FEATURES_IN_ORDER)
+        writer.writerow(constants.SENSOR_FEATURES_IN_ORDER)
 
         while True:
             curr_window_end = curr_window_start + window_size_ms
@@ -152,8 +155,11 @@ def transform_file(input_path: os.PathLike, output_path: os.PathLike) -> None:
                     transformed_features[f"{sensor}#std"] = transformed_values.std()
                     transformed_features[f"{sensor}#min"] = transformed_values.min()
                     transformed_features[f"{sensor}#max"] = transformed_values.max()
-            writer.writerow([index] + [transformed_features[sensor_feature] for sensor_feature in constants.SENSOR_FEATURES_IN_ORDER])
-            index += 1
+            writer.writerow([transformed_features[sensor_feature] for sensor_feature in constants.SENSOR_FEATURES_IN_ORDER])
+            has_output = True
+
+    if not has_output:
+        os.remove(output_path)
 
 def transform_files() -> None:
     """
