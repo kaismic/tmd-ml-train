@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import constants
 import utils
+from tqdm import tqdm
 from skl2onnx import convert_sklearn
 from skl2onnx.helpers.onnx_helper import save_onnx_model
 from skl2onnx.common.data_types import FloatTensorType
@@ -22,8 +23,13 @@ def create_dataframe() -> pd.DataFrame:
         df['transport_mode'] = constants.TRANSPORT_MODES[utils.get_transport_mode_from_path(file)]
         result_df = pd.concat([result_df, df], ignore_index=True)
 
+    print(f"DataFrame shape before dropping rows with NaN: {result_df.shape}")
+    print(f"\n{result_df.head()}")
+
+    result_df = result_df.dropna()
+
     print(f"Final DataFrame shape: {result_df.shape}")
-    print(f"Sample of DataFrame:\n{result_df.head()}")
+    print(f"\n{result_df.head()}")
     return result_df
 
 
@@ -37,21 +43,42 @@ def train_and_save_model(df: pd.DataFrame) -> None:
     """
     """
 
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.neural_network import MLPClassifier
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.svm import SVC
+    from sklearn import tree
+
     x = df.drop(columns=['transport_mode'])
     y = df['transport_mode']
 
-    from sklearn.ensemble import RandomForestClassifier
-    classifier = RandomForestClassifier(n_estimators=100, random_state=296737)
-    classifier.fit(x, y)
+    algs = ['random_forest', 'decision_tree', 'knn', 'svm', 'neural_network']
 
-    # Save the trained model in ONNX format
-    model = create_model(classifier, len(x.columns))
+    iter = tqdm(algs)
+    for alg in algs:
+        print(iter)
+        match alg:
+            case 'random_forest':
+                classifier = RandomForestClassifier(random_state=296737)
+            case 'decision_tree':
+                classifier = tree.DecisionTreeClassifier()
+            case 'knn':
+                classifier = SVC()
+            case 'svm':
+                classifier = MLPClassifier()
+            case 'neural_network':
+                classifier = KNeighborsClassifier()
+            case _:
+                print("Unknown algorithm: ", alg)
+                return
+        classifier.fit(x, y)
+        model = create_model(classifier, len(x.columns))
+        out_path = os.path.join(constants.MODELS_PATH, alg + '.onnx')
+        save_onnx_model(model, out_path)
+        print(f"Model trained and saved to {out_path}")
+        iter.update()
 
-    out_path = os.path.join(constants.MODELS_PATH, 'random_forest.onnx')
-    save_onnx_model(model, out_path)
-
-    print(f"Model trained and saved to {out_path}")
-
+    print("All training and models generation complete.")
 
 if __name__ == "__main__":
     df = create_dataframe()
