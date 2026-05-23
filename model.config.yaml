@@ -1,0 +1,9 @@
+transport_modes:
+  bus: 0
+  car: 1
+  train: 2
+sensors: ['accelerometer', 'gyroscope', 'linear_acceleration', 'magnetic_field']
+features: ['mean', 'std', 'min', 'max']
+
+window_size_seconds: 10
+window_next_step_seconds: 5
