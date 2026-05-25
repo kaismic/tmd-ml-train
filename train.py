@@ -74,11 +74,11 @@ class Train:
                 case 'decision_tree':
                     classifier = tree.DecisionTreeClassifier()
                 case 'knn':
-                    classifier = SVC()
-                case 'svm':
-                    classifier = MLPClassifier()
-                case 'neural_network':
                     classifier = KNeighborsClassifier()
+                case 'svm':
+                    classifier = SVC()
+                case 'neural_network':
+                    classifier = MLPClassifier()
                 case _:
                     print("Unknown algorithm: ", alg)
                     return
