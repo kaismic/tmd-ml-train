@@ -42,9 +42,9 @@ class Train:
 
 
     def create_model(self, classifier, n_features):
-        """Convert a fitted sklearn classifier to ONNX and write it to DIR_RESULTS."""
-        initial_type = [('float_input', FloatTensorType([None, n_features]))]
-        return convert_sklearn(classifier, initial_types=initial_type)
+        options = {id(classifier): {"zipmap": False, "output_class_labels": True}}
+        input_shape = [('features', FloatTensorType([1, n_features]))]
+        return convert_sklearn(classifier, initial_types=input_shape, options=options)
 
     def train_and_save_model(self) -> None:
         """
@@ -70,7 +70,7 @@ class Train:
             print(iter)
             match alg:
                 case 'random_forest':
-                    classifier = RandomForestClassifier(random_state=296737)
+                    classifier = RandomForestClassifier()
                 case 'decision_tree':
                     classifier = tree.DecisionTreeClassifier()
                 case 'knn':
