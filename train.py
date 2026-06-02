@@ -76,7 +76,7 @@ class Train:
                 case 'knn':
                     classifier = KNeighborsClassifier()
                 case 'svm':
-                    classifier = SVC()
+                    classifier = SVC(probability=True)
                 case 'neural_network':
                     classifier = MLPClassifier()
                 case _:
