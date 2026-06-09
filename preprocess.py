@@ -106,10 +106,8 @@ class Preprocess:
         Transform a cleaned data file by:
         - Segmenting the data into overlapping windows of a specified size and step.
         - For each window, compute features (mean, std, min, max) for each sensor type.
-        - For vector sensors, compute the magnitude of the vector and use that for feature computation instead of individual components.
-        - For rotation vector, compute sin(θ/2) from the w component and use that for feature computation instead of the raw value.
+        - For vector sensors, compute t he magnitude of the vector and use that for feature computation instead of individual components.
         - Save the transformed features in a new CSV file with a header indicating the sensor and feature type.
-        - The output CSV will have columns: time (window index), followed by features for each sensor in the order defined by constants.SENSOR_FEATURES_IN_ORDER.
         """
 
         has_output: bool = False
@@ -143,22 +141,12 @@ class Preprocess:
                 transformed_features = {}
                 for sensor in self.config.sensors:
                     transformed_values: pd.Series = pd.Series()
-                    valid: bool = False
                     sensor_window: pd.DataFrame = window[window['sensor_type'] == sensor]
-                    # if (sensor in constants.VECTOR_TRANSFORM_SENSORS):
                     transformed_values = (sensor_window[['val1', 'val2', 'val3']].pow(2).sum(axis=1)).pow(0.5)
-                    valid = True
-                    # elif (sensor in constants.SCALAR_TRANSFORM_SENSORS):
-                    #     # Compute sin(θ/2) from w component of rotation vector
-                    #     # But I'm not sure if this is even necessary or useful, since the rotation vector already represents orientation in a compact form.
-                    #     transformed_values = sensor_window['val4'].apply(math.acos).apply(math.sin)
-                    #     valid = True
-                    if valid:
-                        assert not transformed_values.empty, "Transformed values should not be empty when valid is True"
-                        transformed_features[f"{sensor}#mean"] = transformed_values.mean()
-                        transformed_features[f"{sensor}#std"] = transformed_values.std()
-                        transformed_features[f"{sensor}#min"] = transformed_values.min()
-                        transformed_features[f"{sensor}#max"] = transformed_values.max()
+                    transformed_features[f"{sensor}#mean"] = transformed_values.mean()
+                    transformed_features[f"{sensor}#std"] = transformed_values.std()
+                    transformed_features[f"{sensor}#min"] = transformed_values.min()
+                    transformed_features[f"{sensor}#max"] = transformed_values.max()
                 writer.writerow([transformed_features[sensor_feature] for sensor_feature in self.config.sensor_features_in_order])
                 has_output = True
 
