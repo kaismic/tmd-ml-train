@@ -23,6 +23,19 @@ docker compose --profile train up --build
 
 The output models will be located under `models/[config-hash]/`
 
+## Development container
+
+Open this project directory in VS Code and run **Dev Containers: Reopen in Container**. The development service bind-mounts the project at `/app`, installs the pipeline requirements during the image build, and installs the configured editor tools after the container is created.
+
+The same service can be verified from a terminal:
+
+```sh
+docker compose build dev
+docker compose up -d dev
+docker compose exec dev python -c "import pandas, sklearn, skl2onnx, yaml"
+docker compose down
+```
+
 ## Notes
 Running the following command:
 ```

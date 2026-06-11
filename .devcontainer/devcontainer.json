@@ -3,7 +3,7 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "dev",
   "workspaceFolder": "/app",
-  "overrideCommand": true,
+  "overrideCommand": false,
   "shutdownAction": "stopCompose",
 
   "remoteEnv": {

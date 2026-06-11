@@ -18,8 +18,8 @@ services:
   # to a long-running shell without triggering a pipeline step.
   dev:
     <<: *common-config
-    profiles:
-      - dev
+    volumes:
+      - .:/app
     command: sleep infinity
 
   # ── Pipeline steps ───────────────────────────────────────────────────────────
