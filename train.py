@@ -56,14 +56,11 @@ class Train:
 
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.neural_network import MLPClassifier
-        from sklearn.neighbors import KNeighborsClassifier
-        from sklearn.svm import SVC
-        from sklearn import tree
 
         x = self.df.drop(columns=['transport_mode'])
         y = self.df['transport_mode']
 
-        algs = ['random_forest', 'decision_tree', 'knn', 'svm', 'neural_network']
+        algs = ['random_forest', 'neural_network']
 
         iter = tqdm(algs)
         for alg in algs:
@@ -71,12 +68,6 @@ class Train:
             match alg:
                 case 'random_forest':
                     classifier = RandomForestClassifier()
-                case 'decision_tree':
-                    classifier = tree.DecisionTreeClassifier()
-                case 'knn':
-                    classifier = KNeighborsClassifier()
-                case 'svm':
-                    classifier = SVC(probability=True)
                 case 'neural_network':
                     classifier = MLPClassifier()
                 case _:
